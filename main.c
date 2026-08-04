@@ -22,6 +22,14 @@ Date: August 2026
 #define MIN_FRAMES 8
 #define MAX_FRAMES 16
 
+// Colours
+#define C_RST    "\033[0m"
+#define C_CYAN   "\033[1;36m"
+#define C_WHITE  "\033[1;37m"
+#define C_GREEN  "\033[1;32m"
+#define C_RED    "\033[1;31m"
+#define C_GREY   "\033[0;90m"
+
 // Function Prototypes
 void displayTitle();
 int getFrameCount();
@@ -30,6 +38,12 @@ int getLoadedPageCount(int frameCount);
 int getValidPageNumber (int pageTable[]);
 int getValidFrameNumber(int frameCount, int pageTable[]);
 bool isFrameUsed (int pageTable[], int frameNumber);
+void translateLogicalAddress(int pageTable[]);
+int calculatePageNumber(int logicalAddress);
+int calculateOffset(int logicalAddress);
+bool isPageFault (int frameNumber);
+int getPhysicalAddress(int frameNumber, int offset);
+void displayOutput(int logicalAddress, int pageNumber, int offset, int frameNumber, int physicalAddress);
 
 int main (){
 
@@ -37,8 +51,99 @@ int main (){
     int frameCount = getFrameCount();
     int pageTable[MAX_PAGES];
     createPageTable(pageTable, frameCount);
+    translateLogicalAddress(pageTable);
 
     return 0;
+}
+
+void translateLogicalAddress(int pageTable[]){
+    printf("Enter Logical Address : ");
+    int logicalAddress;
+
+    while(1){
+
+        if(scanf("%d",&logicalAddress) != 1){
+            printf("Invalid type. Please enter a valid Logical address");
+            while(getchar()!='\n');
+            logicalAddress = 0;
+            continue;
+        }
+
+        if(logicalAddress >= PAGE_SIZE * MAX_PAGES || logicalAddress < 0){
+            printf("Logical address exceeded the limit. Address should be less that %d", PAGE_SIZE * MAX_PAGES);
+            continue;
+        }
+
+        int pageNumber = calculatePageNumber(logicalAddress);
+        int offset = calculateOffset(logicalAddress);
+        int frameNumber = pageTable[pageNumber];
+        int physicalAddress = getPhysicalAddress(frameNumber , offset);
+
+        displayOutput(logicalAddress, pageNumber, offset, frameNumber, physicalAddress);
+
+        break;
+
+
+    }    
+}
+
+void displayOutput(int logicalAddress, int pageNumber, int offset, int frameNumber, int physicalAddress){
+    if (physicalAddress == -1 ){
+
+        printf(C_GREY "+------------------------------------------------------------+\n");
+        printf("|" C_CYAN "                  ADDRESS TRANSLATION RESULT                " C_GREY "|\n");
+        printf("+------------------------------------------------------------+\n");
+        printf("|  " C_WHITE "Logical Address" C_GREY "   :  " C_WHITE "%-6d" C_GREY "                                " "|\n", logicalAddress);
+        printf("|  " C_WHITE "Page Number" C_GREY "       :  " C_WHITE "%-6d" C_GREY "                                " "|\n", pageNumber);
+        printf("|  " C_WHITE "Offset" C_GREY "            :  " C_WHITE "%-6d" C_GREY "                                " "|\n", offset);
+        printf("|------------------------------------------------------------|\n");
+        printf("|  " C_WHITE "Status" C_GREY "            :  " C_RED "[ !! ] PAGE FAULT OCCURRED" C_GREY "            |\n");
+        printf("+------------------------------------------------------------+\n" C_RST);
+        
+    }
+    else{
+        printf(C_GREY "+------------------------------------------------------------+\n");
+        printf("|" C_CYAN "                  ADDRESS TRANSLATION RESULT                " C_GREY "|\n");
+        printf("+------------------------------------------------------------+\n");
+        printf("|  " C_WHITE "Logical Address" C_GREY "   :  " C_WHITE "%-6d" C_GREY "                                " "|\n", logicalAddress);
+        printf("|  " C_WHITE "Page Number" C_GREY "       :  " C_WHITE "%-6d" C_GREY "                                " "|\n", pageNumber);
+        printf("|  " C_WHITE "Offset" C_GREY "            :  " C_WHITE "%-6d" C_GREY "                                " "|\n", offset);
+        printf("|------------------------------------------------------------|\n");
+        printf("|  " C_WHITE "Frame Number" C_GREY "      :  " C_WHITE "%-6d" C_GREY "                                " "|\n", frameNumber);
+        printf("|  " C_WHITE "Physical Address" C_GREY "  :  " C_WHITE "%-6d" C_GREY "                                " "|\n", physicalAddress);
+        printf("|------------------------------------------------------------|\n");
+        printf("|  " C_WHITE "Status" C_GREY "            :  " C_GREEN "[ OK ]  TRANSLATION SUCCESSFUL" C_GREY "        |\n");
+        printf("+------------------------------------------------------------+\n" C_RST);
+    }
+}
+
+int getPhysicalAddress(int frameNumber, int offset){
+
+    if (isPageFault(frameNumber)){
+        return -1;
+    }
+    else{
+        int physicalAddress = frameNumber * PAGE_SIZE + offset;
+        return physicalAddress;
+    }
+}
+
+bool isPageFault (int frameNumber){
+    if(frameNumber == -1){
+       return true;
+    }
+
+    return false;
+}
+
+int calculateOffset(int logicalAddress){
+    int offset = logicalAddress % PAGE_SIZE;
+    return offset;
+}
+
+int calculatePageNumber(int logicalAddress){
+    int pageNumber = logicalAddress / PAGE_SIZE;
+    return pageNumber;
 }
 
 bool isFrameUsed (int pageTable[], int frameNumber){
