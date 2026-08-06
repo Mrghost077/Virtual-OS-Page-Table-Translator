@@ -21,6 +21,11 @@ Date: August 2026
 #define MAX_ADDRESSES ((MAX_PAGES * PAGE_SIZE) - 1)
 #define MIN_FRAMES 8
 #define MAX_FRAMES 16
+#define UNMAPPED -1
+
+// Coloumn width for page tables
+#define COL1_WIDTH 13  
+#define COL2_WIDTH 20  
 
 // Colours
 #define C_RST    "\033[0m"
@@ -29,6 +34,7 @@ Date: August 2026
 #define C_GREEN  "\033[1;32m"
 #define C_RED    "\033[1;31m"
 #define C_GREY   "\033[0;90m"
+#define C_YEL    "\033[1;33m"
 
 // Function Prototypes
 void displayTitle();
@@ -44,33 +50,153 @@ int calculateOffset(int logicalAddress);
 bool isPageFault (int frameNumber);
 int getPhysicalAddress(int frameNumber, int offset);
 void displayOutput(int logicalAddress, int pageNumber, int offset, int frameNumber, int physicalAddress);
+void displayMenu ();
+int getMenuChoice ();
+void displayPageTable(int pageTable[]);
+void displayExitMessage();
 
 int main (){
 
     displayTitle();
-    int frameCount = getFrameCount();
-    int pageTable[MAX_PAGES];
-    createPageTable(pageTable, frameCount);
-    translateLogicalAddress(pageTable);
+    while(1){
+        int frameCount = getFrameCount();
+        int pageTable[MAX_PAGES];
+        createPageTable(pageTable, frameCount);
 
-    return 0;
+        int newSimulation = 0;
+
+        while(!newSimulation){
+            displayMenu();
+            int choice = getMenuChoice();
+
+            switch(choice){
+                case 1: displayPageTable(pageTable);
+                break;
+
+                case 2 : translateLogicalAddress(pageTable);
+                break;
+
+                case 3 : newSimulation = 1;
+                break;
+
+                case 4: displayExitMessage();
+                 return 0;
+            }
+        }
+    }
+    
+}
+
+void displayExitMessage(){
+     printf("\n" C_GREY "  .-----------------------------------------------------------------.\n\n" C_RST);
+
+    printf("                    " C_CYAN "PAGE-TABLE-SIM v1.0" C_WHITE " -- SESSION ENDED\n\n" C_RST);
+
+    printf(C_WHITE "              Thank you for using the Page Table Translator.\n");
+    printf("                     All simulation data has been cleared.\n\n" C_RST);
+
+    printf(C_CYAN "                              Goodbye!\n\n" C_RST);
+
+    printf(C_GREY "  `-----------------------------------------------------------------'\n\n" C_RST);
+}
+
+void displayPageTable(int pageTable[]){
+
+    printf("\n" C_GREY "+----------------------------------+\n");
+    printf("|" C_CYAN "            PAGE TABLE            " C_GREY "|\n");
+    printf("+----------------------------------+\n" C_RST);
+
+    
+    printf(C_GREY "|  " C_WHITE "Page No." C_GREY "   |     " C_WHITE "Frame No." C_GREY "      |\n");
+    printf("|-------------+--------------------|\n" C_RST);
+
+    for (int i = 0; i < MAX_PAGES; i++) {
+       
+        int pad1 = (COL1_WIDTH - 1) / 2;
+        printf(C_GREY "|%*s%-*d" , pad1, "", COL1_WIDTH - pad1, i);
+        printf(C_GREY "|");
+
+        if (pageTable[i] == UNMAPPED) {
+            int textLen = 8; 
+            int pad2 = (COL2_WIDTH - textLen) / 2;
+            printf("%*s" C_RED "UNMAPPED" C_GREY "%*s|\n",
+                   pad2, "", COL2_WIDTH - textLen - pad2, "");
+        } else {
+            char buf[8];
+            int len = sprintf(buf, "%d", pageTable[i]);
+            int pad2 = (COL2_WIDTH - len) / 2;
+            printf("%*s" C_GREEN "%d" C_GREY "%*s|\n",
+                   pad2, "", pageTable[i], COL2_WIDTH - len - pad2, "");
+        }
+    }
+
+    printf(C_GREY "+----------------------------------+\n\n" C_RST);
+}
+
+int getMenuChoice (){
+
+    while(1){
+
+        int choice;
+
+         if (scanf("%d", &choice) != 1){
+            printf ("Invalid type. Please enter a valid number \n");
+            while(getchar() != '\n');
+            continue;
+        }
+
+        if (choice <= 0 || choice > 4){
+            printf("Invalid choice. Please enter a value between 1 and 4 \n");
+            continue;
+        }
+
+        return choice;
+    }
+
+}
+
+void displayMenu (){
+
+    printf("\n");
+    printf(C_GREY "==============================================================\n");
+    printf("  " C_CYAN "PAGE-TABLE-TRANSLATOR v1.0" C_GREY "                          " C_WHITE "[ MAIN MENU ]" C_GREY "\n");
+    printf("==============================================================\n\n" C_RST);
+
+    printf("            1.  Display Page Table\n");
+    printf("            2.  Translate Address\n");
+    printf("            3.  New Simulation\n");
+    printf("            4.  Exit\n\n");
+
+    printf(C_GREY "--------------------------------------------------------------\n");
+    printf("  Use number keys to select, then press ENTER\n");
+    printf("==============================================================\n\n" C_RST);
+
+    printf("  " C_WHITE "select" C_GREY " > " C_RST);
+
 }
 
 void translateLogicalAddress(int pageTable[]){
-    printf("Enter Logical Address : ");
+    
     int logicalAddress;
 
     while(1){
 
+        printf("Enter Logical Address : ");
+
         if(scanf("%d",&logicalAddress) != 1){
-            printf("Invalid type. Please enter a valid Logical address");
+            printf("Invalid type. Please enter a valid Logical address\n");
             while(getchar()!='\n');
             logicalAddress = 0;
             continue;
         }
 
-        if(logicalAddress >= PAGE_SIZE * MAX_PAGES || logicalAddress < 0){
-            printf("Logical address exceeded the limit. Address should be less that %d", PAGE_SIZE * MAX_PAGES);
+        if(logicalAddress >= PAGE_SIZE * MAX_PAGES ){
+            printf("Invalid Logical. Address should be less than %d\n", PAGE_SIZE * MAX_PAGES);
+            continue;
+        }
+
+        if(logicalAddress < 0 ){
+            printf("Invalid Logical. Address should be a 0 or greater than that.\n");
             continue;
         }
 
