@@ -17,11 +17,14 @@ Date: August 2026
 
 // constraints mentioned in the project specification
 #define MAX_PAGES 16
-#define PAGE_SIZE 1024
-#define MAX_ADDRESSES ((MAX_PAGES * PAGE_SIZE) - 1)
+#define MAX_PAGE_SIZE 1024
+#define MAX_TRANSLATIONS 12
 #define MIN_FRAMES 8
 #define MAX_FRAMES 16
 #define UNMAPPED -1
+
+// Global Variables
+int PAGE_SIZE;
 
 // Coloumn width for page tables
 #define COL1_WIDTH 13  
@@ -54,11 +57,14 @@ void displayMenu ();
 int getMenuChoice ();
 void displayPageTable(int pageTable[]);
 void displayExitMessage();
+int getPageSize();
+int getTranslationCount();
 
 int main (){
 
     displayTitle();
     while(1){
+        PAGE_SIZE = getPageSize();
         int frameCount = getFrameCount();
         int pageTable[MAX_PAGES];
         createPageTable(pageTable, frameCount);
@@ -85,6 +91,52 @@ int main (){
         }
     }
     
+}
+
+int getPageSize(){
+
+    int choice;
+
+    while(1){
+
+        printf("\n");
+        printf(C_GREY "================================================\n");
+        printf("              PAGE SIZE CONFIGURATION\n");
+        printf("================================================\n" C_RST);
+
+        printf("        1. 128 bytes\n");
+        printf("        2. 256 bytes\n");
+        printf("        3. 512 bytes\n");
+        printf("        4. 1024 bytes\n\n");
+
+        printf(C_GREY "------------------------------------------------\n" C_RST);
+        printf("  " C_WHITE "Select page size" C_GREY " > " C_RST);
+
+        if(scanf("%d", &choice) != 1){
+            printf("Invalid input. Please enter a number.\n");
+            while(getchar() != '\n');
+            continue;
+        }
+
+        if(choice < 1 || choice > 4){
+            printf("Invalid choice. Please select between 1 and 4.\n");
+            continue;
+        }
+
+        switch(choice){
+            case 1:
+                return 128;
+
+            case 2:
+                return 256;
+
+            case 3:
+                return 512;
+
+            case 4:
+                return 1024;
+        }
+    }
 }
 
 void displayExitMessage(){
@@ -175,44 +227,81 @@ void displayMenu (){
 
 }
 
-void translateLogicalAddress(int pageTable[]){
-    
+int getTranslationCount()
+{
+    int count;
+
+    while(1)
+    {
+        printf("\nHow many logical addresses do you want to translate? (1-%d): ",
+               MAX_TRANSLATIONS);
+
+        if(scanf("%d", &count) != 1)
+        {
+            printf("Invalid input. Please enter a number.\n");
+            while(getchar() != '\n');
+            continue;
+        }
+
+        if(count < 1 || count > MAX_TRANSLATIONS)
+        {
+            printf("Invalid number. Please enter a value between 1 and %d.\n",
+                   MAX_TRANSLATIONS);
+            continue;
+        }
+
+        return count;
+    }
+}
+
+void translateLogicalAddress(int pageTable[])
+{
     int logicalAddress;
+    int translationCount = getTranslationCount();
 
-    while(1){
+    for(int i = 0; i < translationCount; i++)
+    {
+        
 
-        printf("Enter Logical Address : ");
+        while(1)
+        {
+            printf("\nEnter Logical Address %d of %d: ", i + 1, translationCount);
+            
+            if(scanf("%d", &logicalAddress) != 1)
+            {
+                printf("Invalid type. Please enter a valid Logical address\n");
+                while(getchar() != '\n');
+                continue;
+            }
 
-        if(scanf("%d",&logicalAddress) != 1){
-            printf("Invalid type. Please enter a valid Logical address\n");
-            while(getchar()!='\n');
-            logicalAddress = 0;
-            continue;
-        }
+            if(logicalAddress >= PAGE_SIZE * MAX_PAGES)
+            {
+                printf("Invalid Logical Address. Address should be less than %d\n",
+                       PAGE_SIZE * MAX_PAGES);
+                continue;
+            }
 
-        if(logicalAddress >= PAGE_SIZE * MAX_PAGES ){
-            printf("Invalid Logical. Address should be less than %d\n", PAGE_SIZE * MAX_PAGES);
-            continue;
-        }
+            if(logicalAddress < 0)
+            {
+                printf("Invalid Logical Address. Address should be 0 or greater.\n");
+                continue;
+            }
 
-        if(logicalAddress < 0 ){
-            printf("Invalid Logical. Address should be a 0 or greater than that.\n");
-            continue;
+            break;
         }
 
         int pageNumber = calculatePageNumber(logicalAddress);
         int offset = calculateOffset(logicalAddress);
         int frameNumber = pageTable[pageNumber];
-        int physicalAddress = getPhysicalAddress(frameNumber , offset);
+        int physicalAddress = getPhysicalAddress(frameNumber, offset);
 
-        displayOutput(logicalAddress, pageNumber, offset, frameNumber, physicalAddress);
-
-        break;
-
-
-    }    
+        displayOutput(logicalAddress,
+                      pageNumber,
+                      offset,
+                      frameNumber,
+                      physicalAddress);
+    }
 }
-
 void displayOutput(int logicalAddress, int pageNumber, int offset, int frameNumber, int physicalAddress){
     if (physicalAddress == -1 ){
 
