@@ -1,336 +1,133 @@
 # Page Table Translator
 
-**EEI5265 - Operating Systems Mini Project**
-**Group A - Page Table Translator**
+A console-based Operating Systems mini project that simulates **logical address to physical address translation using one-level paging and a page table**.
 
-A console-based C program that simulates the translation of logical addresses into physical addresses using a one-level page table.
+This project was developed for the Operating Systems module to demonstrate how an operating system can divide logical memory into pages, map those pages to physical memory frames, and translate logical addresses into physical addresses.
 
 ---
 
 ## 1. Project Overview
 
-The Page Table Translator is a simple simulation of how an operating system translates a logical address into a physical address using paging.
+The **Page Table Translator** simulates the basic address translation process used in a paged virtual memory system.
 
-The program allows the user to:
+The user can:
 
-* Select the page size at runtime.
-* Select the number of physical frames.
+* Configure the page size at the beginning of a simulation.
+* Configure the number of physical frames.
 * Create a page-to-frame mapping manually.
 * View the current page table.
 * Translate one or more logical addresses.
+* Calculate the page number and offset.
+* Find the corresponding physical frame.
+* Calculate the physical address.
 * Detect page faults when a page is not loaded.
-* Reject logical addresses outside the valid address space.
 * Start a new simulation without restarting the program.
+* Exit the program safely.
 
-The project focuses on demonstrating the basic concepts of:
+The project uses **one-level paging only**. No page replacement algorithm is implemented because it is not required for the Page Table Translator.
 
+---
+
+## 2. Main Concepts Demonstrated
+
+The program demonstrates the following Operating Systems concepts:
+
+* Virtual memory
 * Logical addresses
 * Physical addresses
-* Pages
-* Frames
+* Paging
+* Pages and frames
 * Page tables
-* Offsets
-* Page faults
+* Page number calculation
+* Offset calculation
 * Address translation
+* Page faults
+* Logical-to-physical address conversion
+
+The basic translation process is:
+
+```text
+Logical Address
+      │
+      ▼
+┌───────────────┐
+│ Page Number   │
+│ Offset        │
+└───────────────┘
+      │
+      ▼
+   Page Table
+      │
+      ▼
+ Frame Number
+      │
+      ▼
+Physical Address
+```
+
+The page number is obtained by dividing the logical address by the page size, while the offset is obtained from the remainder.
+
+The physical address is then calculated using the mapped frame and the offset.
 
 ---
 
-## 2. Requirements
+## 3. Features
 
-### Software
+### Simulation Configuration
 
-The program is written in **C** and requires a C compiler.
+At the beginning of each simulation, the user can configure:
 
-Recommended options include:
+* Page size
+* Number of physical frames
+* Number of pages currently loaded
+* Page-to-frame mappings
 
-* GCC
-* Code::Blocks with GCC
-* Any IDE that supports standard C compilation
+The available page-size choices are restricted according to the project requirements, with **1024 bytes (1 KB) as the maximum allowed page size**.
 
-### Operating System
+### Page Table
 
-The program can be run from a Windows command prompt, terminal, or an IDE console that supports standard C input/output.
+The program creates a page table containing up to 16 pages.
 
----
+Each page can either:
 
-## 3. Project Constraints
+* Be mapped to a physical frame, or
+* Remain `UNMAPPED`
 
-The implementation follows the constraints given in the mini project specification.
+The program also prevents the same physical frame from being assigned to multiple pages.
 
-| Requirement                  | Implementation               |
-| ---------------------------- | ---------------------------- |
-| Maximum pages                | 16                           |
-| Maximum page size            | 1024 bytes (1 KB)            |
-| Page sizes available         | 128, 256, 512 and 1024 bytes |
-| Minimum frames               | 8                            |
-| Maximum frames               | 16                           |
-| Maximum translations per run | 12                           |
-| Paging type                  | One-level paging             |
-| Page replacement             | Not implemented              |
-| Unloaded page                | Reported as a page fault     |
+### Address Translation
 
-The available page sizes are powers of two and do not exceed the maximum permitted page size of 1024 bytes.
+The user can translate up to **12 logical addresses per translation run**.
 
----
+For each address, the program displays:
 
-## 4. Main Concepts
+* Logical Address
+* Page Number
+* Offset
+* Frame Number, when available
+* Physical Address, when translation is successful
+* Page Fault message, when the page is not loaded
 
-### 4.1 Logical Address
+### Input Validation
 
-A logical address is the address generated within the logical address space.
+The program validates user input for:
 
-The program separates a logical address into:
+* Page size
+* Number of frames
+* Number of loaded pages
+* Page numbers
+* Frame numbers
+* Menu choices
+* Logical addresses
+* Number of addresses to translate
+* Duplicate page mappings
+* Duplicate frame mappings
 
-```text
-Page Number + Offset
-```
+Invalid logical addresses are rejected instead of being incorrectly treated as page faults.
 
-The page number identifies which page contains the address, while the offset identifies the exact location within that page.
+### Main Menu
 
----
-
-### 4.2 Page Number
-
-The page number is calculated using integer division:
-
-```text
-Page Number = Logical Address / Page Size
-```
-
-For example, with a page size of 1024 bytes:
-
-```text
-Logical Address = 1500
-
-Page Number = 1500 / 1024
-            = 1
-```
-
-Therefore, address 1500 belongs to page 1.
-
----
-
-### 4.3 Offset
-
-The offset identifies the position of the address within its page.
-
-It is calculated using the remainder operation:
-
-```text
-Offset = Logical Address % Page Size
-```
-
-For example:
-
-```text
-Logical Address = 1500
-Page Size = 1024
-
-Offset = 1500 % 1024
-       = 476
-```
-
----
-
-### 4.4 Physical Address
-
-Once the page number is obtained, the page table is used to find the corresponding physical frame.
-
-The physical address is then calculated as:
-
-```text
-Physical Address = Frame Number × Page Size + Offset
-```
-
-For example:
-
-```text
-Page Number = 1
-Frame Number = 5
-Offset = 476
-Page Size = 1024
-
-Physical Address = 5 × 1024 + 476
-                 = 5596
-```
-
----
-
-### 4.5 Page Fault
-
-If a page is not currently loaded into physical memory, its page table entry is stored as:
-
-```text
-UNMAPPED
-```
-
-The program detects this condition and displays:
-
-```text
-PAGE FAULT OCCURRED
-```
-
-No physical address is generated for an unmapped page.
-
----
-
-## 5. How the Program Works
-
-The program follows this general sequence:
-
-```text
-Start Program
-      |
-      v
-Select Page Size
-      |
-      v
-Select Number of Frames
-      |
-      v
-Create Page Table
-      |
-      v
-Enter Page-to-Frame Mappings
-      |
-      v
-Display Main Menu
-      |
-      +-----------------------------+
-      |                             |
-      v                             v
-Display Page Table           Translate Address
-                                    |
-                                    v
-                         Calculate Page Number
-                                    |
-                                    v
-                            Calculate Offset
-                                    |
-                                    v
-                          Check Page Table
-                              /       \
-                             /         \
-                            v           v
-                       Mapped       Unmapped
-                          |             |
-                          v             v
-                 Calculate Physical   Page Fault
-                     Address
-```
-
----
-
-## 6. Running the Program
-
-### Option 1 - Using Code::Blocks
-
-1. Open Code::Blocks.
-2. Open the `main.c` source file.
-3. Make sure the project is configured as a C project.
-4. Build the program.
-5. Run the program.
-6. Follow the instructions displayed in the console.
-
----
-
-### Option 2 - Using GCC
-
-Open a terminal in the directory containing `main.c`.
-
-Compile the program using:
-
-```bash
-gcc main.c -o page_table_translator
-```
-
-Run it using:
-
-### Windows
-
-```bash
-page_table_translator.exe
-```
-
-### Linux/macOS
-
-```bash
-./page_table_translator
-```
-
----
-
-## 7. Using the Program
-
-### Step 1 - Select Page Size
-
-When the program starts, it asks the user to select a page size.
-
-Available options are:
-
-```text
-1. 128 bytes
-2. 256 bytes
-3. 512 bytes
-4. 1024 bytes
-```
-
-The selected value is used throughout the current simulation.
-
----
-
-### Step 2 - Select Number of Frames
-
-The user is asked to enter the number of physical frames.
-
-The valid range is:
-
-```text
-8 - 16
-```
-
-For example:
-
-```text
-Enter the number of Frames : 8
-```
-
----
-
-### Step 3 - Create the Page Table
-
-The user specifies how many pages are currently loaded.
-
-The program then asks for:
-
-```text
-Page Number
-Frame Number
-```
-
-for each mapping.
-
-For example:
-
-```text
-Page 0 -> Frame 3
-Page 1 -> Frame 5
-Page 4 -> Frame 7
-```
-
-The program prevents:
-
-* Invalid page numbers.
-* Invalid frame numbers.
-* Mapping the same page more than once.
-* Assigning the same frame to multiple pages.
-* Loading more pages than available frames.
-
----
-
-## 8. Main Menu
-
-After creating the page table, the following menu is available:
+After the simulation is configured, the user can:
 
 ```text
 1. Display Page Table
@@ -339,382 +136,350 @@ After creating the page table, the following menu is available:
 4. Exit
 ```
 
-### Display Page Table
-
-Displays all 16 page entries and their corresponding frame numbers.
-
-An unloaded page is shown as:
-
-```text
-UNMAPPED
-```
+This allows multiple translations to be performed using the same page table without having to recreate the simulation after every translation.
 
 ---
 
-### Translate Address
+## 4. Project Constraints
 
-The user first specifies how many logical addresses they want to translate.
+The implementation follows the main constraints given in the project specification.
 
-The allowed range is:
-
-```text
-1 - 12
-```
-
-The user does **not** have to enter all 12 addresses.
-
-For example, the user can choose:
-
-```text
-How many logical addresses do you want to translate? (1-12): 3
-```
-
-and then enter three addresses.
-
-The program displays the translation result for each address.
+| Requirement                  | Implementation               |
+| ---------------------------- | ---------------------------- |
+| Maximum logical pages        | 16                           |
+| Maximum page size            | 1024 bytes (1 KB)            |
+| Physical frames              | 8–16                         |
+| Paging type                  | One-level paging             |
+| Maximum translations per run | 12                           |
+| Page replacement             | Not required                 |
+| Page fault handling          | Displays Page Fault Occurred |
+| Page table                   | Manually configured by user  |
+| Application type             | Console-based                |
 
 ---
 
-### New Simulation
+## 5. Requirements
 
-The current simulation is discarded and the user can configure a new:
+To compile and run the project, you need:
 
-* Page size
-* Frame count
-* Page table
+* A C compiler
+* A terminal or command prompt
+* A system that supports standard C input/output
 
-This allows multiple simulations to be performed without restarting the program.
+The program uses:
+
+```c
+#include <stdio.h>
+#include <stdbool.h>
+```
+
+ANSI escape codes are also used for coloured console output. On terminals that do not support ANSI colours, the program logic will still work, although the colours may not be displayed correctly.
 
 ---
 
-### Exit
+## 6. Project Structure
 
-Terminates the program and displays the exit message.
+The project is intentionally kept simple because it is a small console-based simulation.
+
+```text
+Page-Table-Translator/
+│
+├── main.c
+└── README.md
+```
+
+### `main.c`
+
+Contains the complete implementation, including:
+
+* Simulation configuration
+* Page table creation
+* Input validation
+* Address translation
+* Page fault detection
+* Physical address calculation
+* Menu handling
+* Console output
 
 ---
 
-## 9. Address Validation
+## 7. Important Functions
 
-The program calculates the maximum logical address based on the selected page size and the maximum number of pages.
+Some of the main functions used in the program are:
 
-The maximum address space is:
+### `getPageSize()`
 
-```text
-Maximum Address Space = Page Size × 16
+Allows the user to select the page size used by the current simulation.
+
+### `getFrameCount()`
+
+Gets the number of physical frames and ensures that it remains within the allowed range.
+
+### `createPageTable()`
+
+Initializes the page table and allows the user to manually create page-to-frame mappings.
+
+### `calculatePageNumber()`
+
+Calculates the page number from a logical address.
+
+### `calculateOffset()`
+
+Calculates the offset within the page.
+
+### `getPhysicalAddress()`
+
+Uses the frame number and offset to calculate the physical address.
+
+### `isPageFault()`
+
+Checks whether the required page is currently mapped to a physical frame.
+
+### `translateLogicalAddress()`
+
+Handles the complete logical-to-physical address translation process.
+
+### `displayPageTable()`
+
+Displays the current page table and its page-to-frame mappings.
+
+---
+
+## 8. How to Compile
+
+### Using GCC
+
+Open a terminal in the project directory and run:
+
+```bash
+gcc main.c -o page_table_translator
 ```
 
-Since addresses start from zero, the largest valid address is:
+Then run:
 
-```text
-(Page Size × 16) - 1
+### Windows
+
+```bash
+page_table_translator.exe
 ```
 
-For example, when the page size is 1024 bytes:
+### Linux / macOS
 
-```text
-Maximum Address Space = 1024 × 16
-                     = 16384 bytes
-
-Largest Valid Address = 16383
+```bash
+./page_table_translator
 ```
 
-Therefore:
+If your system uses another C compiler, the equivalent compile command can be used.
+
+---
+
+## 9. How to Use the Program
+
+### Step 1: Start the program
+
+The program first displays the project title.
+
+### Step 2: Select the page size
+
+Choose one of the available page-size options.
+
+The selected page size is used throughout the current simulation.
+
+### Step 3: Enter the number of frames
+
+Enter a value between the allowed minimum and maximum.
+
+### Step 4: Configure the page table
+
+Enter:
+
+1. Number of pages currently loaded
+2. Page number
+3. Frame number
+
+The program checks that:
+
+* The page number is valid.
+* The frame number is valid.
+* A page is not mapped twice.
+* A frame is not assigned to two pages.
+* The number of loaded pages does not exceed the available frames.
+
+### Step 5: Use the Main Menu
+
+The program then provides the following options:
 
 ```text
-16383 -> Valid
-16384 -> Out of Bounds
+1. Display Page Table
+2. Translate Address
+3. New Simulation
+4. Exit
 ```
 
-An address outside the valid range is rejected instead of being treated as a page fault.
+### Step 6: Translate addresses
+
+Select **Translate Address**.
+
+The program asks how many logical addresses should be translated, with a maximum of 12 per run.
+
+For each address, the program calculates the page number and offset, checks the page table, and either produces the physical address or reports a page fault.
 
 ---
 
 ## 10. Example Translation
 
-Assume the following configuration:
+Assume:
 
 ```text
-Page Size : 1024 bytes
-Frame Count : 8
-
-Page 0 -> Frame 3
-Page 1 -> Frame 5
-Page 4 -> Frame 7
+Page Size = 1024 bytes
+Logical Address = 2500
 ```
 
-Suppose the user enters:
+The page number is:
 
 ```text
-Logical Address : 1500
+2500 / 1024 = 2
 ```
 
-### Step 1 - Calculate Page Number
+The offset is:
 
 ```text
-1500 / 1024 = 1
+2500 % 1024 = 452
 ```
 
 Therefore:
 
 ```text
-Page Number = 1
+Page Number = 2
+Offset      = 452
 ```
 
-### Step 2 - Calculate Offset
-
-```text
-1500 % 1024 = 476
-```
-
-Therefore:
-
-```text
-Offset = 476
-```
-
-### Step 3 - Find Frame
-
-The page table contains:
-
-```text
-Page 1 -> Frame 5
-```
-
-Therefore:
-
-```text
-Frame Number = 5
-```
-
-### Step 4 - Calculate Physical Address
+If page 2 is mapped to frame 5:
 
 ```text
 Physical Address
-= 5 × 1024 + 476
-= 5596
+= Frame × Page Size + Offset
+= 5 × 1024 + 452
+= 5572
 ```
 
-The program therefore reports a successful translation with physical address `5596`.
+The program will display the translation as successful.
 
----
-
-## 11. Page Fault Example
-
-Suppose page 2 is not mapped:
-
-```text
-Page 2 -> UNMAPPED
-```
-
-If the user enters an address belonging to page 2, the program detects that the page is not loaded.
-
-For example, with a page size of 1024:
-
-```text
-Logical Address = 2048
-```
-
-The calculation gives:
-
-```text
-Page Number = 2048 / 1024
-            = 2
-```
-
-Since page 2 is unmapped, the program displays:
+If page 2 is not mapped, the program instead reports:
 
 ```text
 PAGE FAULT OCCURRED
 ```
 
-No physical address is calculated.
+No page replacement is performed.
 
 ---
 
-## 12. Error Handling
+## 11. Invalid Address Handling
 
-The program validates user input at several stages.
+The logical address space is limited by the configured number of pages and page size.
 
-It handles:
+Therefore, an address outside the calculated logical address space is rejected as an invalid address.
 
-* Non-numeric input.
-* Invalid page-size selections.
-* Invalid frame counts.
-* Invalid page numbers.
-* Invalid frame numbers.
-* Duplicate page mappings.
-* Duplicate frame mappings.
-* Invalid logical addresses.
-* Negative logical addresses.
-* Logical addresses outside the available address space.
-* Invalid translation counts.
-
-The program repeatedly asks for valid input instead of terminating when an invalid value is entered.
-
----
-
-## 13. Source Code Structure
-
-The project is implemented in a single C source file:
+For example, if:
 
 ```text
-main.c
+Number of Pages = 16
+Page Size = 1024 bytes
 ```
 
-Important functions include:
+the valid logical address range is:
 
-| Function                    | Purpose                                    |
-| --------------------------- | ------------------------------------------ |
-| `main()`                    | Controls the overall program flow          |
-| `getPageSize()`             | Gets the page size from the user           |
-| `getFrameCount()`           | Gets and validates the frame count         |
-| `createPageTable()`         | Creates the page-to-frame mappings         |
-| `getValidPageNumber()`      | Validates page numbers                     |
-| `getValidFrameNumber()`     | Validates frame numbers                    |
-| `isFrameUsed()`             | Checks whether a frame is already assigned |
-| `translateLogicalAddress()` | Performs address translation               |
-| `calculatePageNumber()`     | Calculates the page number                 |
-| `calculateOffset()`         | Calculates the offset                      |
-| `getPhysicalAddress()`      | Calculates the physical address            |
-| `isPageFault()`             | Checks whether a page is unmapped          |
-| `displayPageTable()`        | Displays the current page table            |
-| `displayOutput()`           | Displays translation results               |
-| `getTranslationCount()`     | Gets the number of addresses to translate  |
-| `displayMenu()`             | Displays the main menu                     |
+```text
+0 to 16383
+```
+
+An address of `16384` is therefore outside the logical address space and must be rejected rather than being treated as a page fault.
 
 ---
 
-## 14. Data Representation
+## 12. Testing
 
-The page table is represented using an integer array:
+The program was tested using valid and invalid inputs covering the major functionality of the simulator.
 
-```c
-int pageTable[MAX_PAGES];
-```
+Testing included:
 
-Each array index represents a page number.
+* Valid page-size selection
+* Invalid page-size selection
+* Valid frame counts
+* Frame counts below the minimum
+* Frame counts above the maximum
+* Valid page mappings
+* Duplicate page mappings
+* Duplicate frame mappings
+* Invalid page numbers
+* Invalid frame numbers
+* Zero loaded pages
+* Loaded pages exceeding available frames
+* Valid logical addresses
+* Negative logical addresses
+* Addresses outside the logical address space
+* Successful address translations
+* Page fault situations
+* Multiple address translations
+* Maximum translation limit
+* New simulation functionality
+* Exit functionality
+* Page table display
 
-The value stored at that index represents the corresponding frame number.
+All major test cases were completed successfully after fixing the identified issues during testing.
+
+---
+
+## 13. Limitations
+
+This project is a simplified simulation and does not attempt to reproduce the complete memory-management system of a real operating system.
 
 For example:
 
-```text
-pageTable[0] = 3
-pageTable[1] = 5
-pageTable[2] = -1
-```
+* Only one-level paging is implemented.
+* No page replacement algorithm is implemented.
+* Pages are mapped manually by the user.
+* The simulation does not manage real physical memory.
+* Page faults are reported but do not trigger page loading.
+* The program operates through a command-line interface.
 
-represents:
-
-```text
-Page 0 -> Frame 3
-Page 1 -> Frame 5
-Page 2 -> Unmapped
-```
-
-The constant:
-
-```c
-#define UNMAPPED -1
-```
-
-is used to represent pages that are not currently loaded into physical memory.
+These limitations are intentional and are consistent with the scope of the Page Table Translator requirement.
 
 ---
 
-## 15. Limitations
+## 14. Future Improvements
 
-This project is intentionally a simplified simulation of virtual memory.
+Possible future improvements include:
 
-The program does not implement:
-
-* Multi-level page tables.
-* Page replacement algorithms.
-* Disk or secondary-storage simulation.
-* Actual hardware memory management.
-* Real operating-system memory allocation.
-* Dynamic page replacement after a page fault.
-
-When a page is not loaded, the program only reports the page fault as required by the project specification.
+* Adding a graphical user interface.
+* Adding automatic page-table generation.
+* Showing the address translation process step-by-step.
+* Adding binary representation of logical and physical addresses.
+* Adding translation history.
+* Adding a visual memory-frame representation.
+* Improving portability of console colours.
+* Separating the implementation into multiple source and header files.
 
 ---
 
-## 16. Testing
+## 15. Author
 
-The program was tested using:
+**Safwan**
 
-* Valid and invalid page sizes.
-* Minimum and maximum frame counts.
-* Valid and invalid page numbers.
-* Valid and invalid frame numbers.
-* Duplicate page mappings.
-* Duplicate frame mappings.
-* Valid logical addresses.
-* Negative addresses.
-* Out-of-bounds addresses.
-* Page-boundary addresses.
-* Mapped pages.
-* Unmapped pages.
-* Different page sizes.
-* Different translation counts.
-* The maximum 12 translations per run.
-* New simulation functionality.
-* Program exit functionality.
-
-Boundary tests were also performed to verify that the maximum valid logical address is accepted and the first address outside the address space is rejected.
+Operating Systems Mini Project
+Group A – Page Table Translator
 
 ---
 
-## 17. Project Files
+## 16. Academic Context
 
-The implementation submission contains:
+This project was developed as an Operating Systems mini project to practically demonstrate the basic concepts of paging, page tables, virtual memory, and logical-to-physical address translation.
 
-```text
-main.c
-README.md
-```
-
-`main.c` contains the complete implementation of the Page Table Translator.
-
-The README provides the instructions and technical information required to compile and use the program.
+The implementation prioritizes correctness, input validation, and clear console output while keeping the system simple enough to demonstrate the underlying Operating Systems concepts.
 
 ---
 
-## 18. Viva Demonstration
+## 17. License
 
-During the viva, the program can be demonstrated by following this sequence:
-
-1. Start the program.
-2. Select a page size.
-3. Select the number of physical frames.
-4. Create several page-to-frame mappings.
-5. Display the page table.
-6. Translate a valid logical address.
-7. Translate an address belonging to an unmapped page to demonstrate a page fault.
-8. Enter an out-of-bounds address to demonstrate validation.
-9. Perform multiple translations in one run.
-10. Start a new simulation if required.
-11. Exit the program.
-
-The main concepts that can be demonstrated during the viva are:
-
-```text
-Logical Address
-       ↓
-Page Number + Offset
-       ↓
-Page Table Lookup
-       ↓
-Frame Number
-       ↓
-Physical Address
-```
-
----
-
-## 19. Author
-
-**Author:** Safwan
-**Course:** EEI5265 - Operating Systems
-**Project:** Mini Project - Group A: Page Table Translator
-**Year:** 2026
+This project was developed for academic purposes.
